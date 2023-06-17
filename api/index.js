@@ -25,7 +25,7 @@ router.post("/contacts",auth, addContact);
 
 router.delete("/contacts/:contactId",auth, removeContact);
 
-router.put("/:contactId",auth, updateContact);
+router.put("/contacts/:contactId",auth, updateContact);
 
 router.patch("/contacts/:contactId/favorite",auth, updateContactStatus);
 
