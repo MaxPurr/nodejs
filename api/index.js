@@ -8,19 +8,36 @@ const {
   addContact,
   removeContact,
   updateContact,
-  updateContactStatus
+  updateContactStatus,
+  registerUser,
+  loginUser,
+  logout,
+  getUser,
+  updateUserSubscription,
+  auth
 } = require("../controller");
 
-router.get("/", getListContacts);
+router.get("/contacts", auth, getListContacts);
 
-router.get("/:contactId", getContactById);
+router.get("/contacts/:contactId", auth, getContactById);
 
-router.post("/", addContact);
+router.post("/contacts",auth, addContact);
 
-router.delete("/:contactId", removeContact);
+router.delete("/contacts/:contactId",auth, removeContact);
 
-router.put("/:contactId", updateContact);
+router.put("/:contactId",auth, updateContact);
 
-router.patch("/:contactId/favorite", updateContactStatus);
+router.patch("/contacts/:contactId/favorite",auth, updateContactStatus);
+
+router.post("/users/register", registerUser)
+
+router.post("/users/login", loginUser)
+
+router.post("/users/logout",auth, logout)
+
+router.get("/users/current",auth, getUser)
+
+router.patch("/users",auth, updateUserSubscription)
+
 
 module.exports = router;
