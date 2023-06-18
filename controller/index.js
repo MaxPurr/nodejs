@@ -159,7 +159,7 @@ const logout = async(req, res, next) =>{
 
 const getUser = async(req, res, next) =>{
   const {email, subscription} = req.user;
-  res.status(200).json(req.user);
+  res.status(200).json({email, subscription});
 }
 
 const updateUserSubscription = async(req, res, next) =>{
