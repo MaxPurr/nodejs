@@ -1,8 +1,14 @@
 const service = require("../service");
 const { HttpError } = require("../helpers");
+const gravatar = require("gravatar");
+const path = require('path');
+const fs = require('fs').promises;
+const jimp = require("jimp");
 
 const passport = require('passport')
 const Joi = require("joi");
+
+const avatarsDir = path.join(__dirname,"../","public","avatars");
 
 const userSchema = Joi.object({
   email: Joi.string().required(),
@@ -106,17 +112,20 @@ const updateContactStatus = async(req, res, next) =>{
 
 const registerUser = async(req, res, next) => {
   const body = req.body;
+  const {email} = body;
   try{
     const {error} = userSchema.validate(body);
     if(error)
       throw HttpError(400, error.message);
-    const user = await service.getUserByEmail(body.email);
+    const user = await service.getUserByEmail(email);
     if (user)
       throw HttpError(409, `Email is already in use.`); 
-    const newUser = await service.registerUser(body);
+    const avatarURL = gravatar.url(email);
+    const newUser = await service.registerUser({...body, avatarURL});
     res.status(201).json({user:{
       email:newUser.email,
-      subscription:newUser.subscription
+      subscription:newUser.subscription,
+      avatarURL:newUser.avatarURL,
     }});
   }
   catch (error) {
@@ -167,13 +176,35 @@ const updateUserSubscription = async(req, res, next) =>{
   const {_id} = user;
   const body = req.body;
   try{
-  const {error} = subscriptionSchema.validate(body);
-  if(error)
-    throw HttpError(400, error.message);
-  await service.updateUserSubscription(_id, body.subscription);
-  res.status(200).json({
-    email:user.email,
-    subscription: body.subscription});
+    const {error} = subscriptionSchema.validate(body);
+    if(error)
+      throw HttpError(400, error.message);
+    await service.updateUserSubscription(_id, body.subscription);
+    res.status(200).json({
+      email:user.email,
+      subscription: body.subscription});
+  }
+  catch(error){
+    next(error);
+  }
+}
+
+const updateUserAvatar = async(req, res, next) =>{
+  const {_id} = req.user;
+  const {path: tempUpload, originalname} = req.file;
+  try{
+    const image = await jimp.read(tempUpload);
+    await image.resize(250, 250, jimp.AUTO);
+    await image.writeAsync(tempUpload);
+
+    const newName = `${_id}_${originalname}`;
+    const resultUpload = path.join(avatarsDir, newName);
+    await fs.rename(tempUpload,resultUpload);
+    const avatarURL = path.join("avatars", newName);
+    await service.updateUserAvatar(_id, avatarURL);
+    res.status(200).json({
+      avatarURL,
+    });
   }
   catch(error){
     next(error);
@@ -192,5 +223,6 @@ module.exports = {
   logout,
   getUser,
   updateUserSubscription,
+  updateUserAvatar,
   auth
 };

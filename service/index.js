@@ -41,8 +41,9 @@ async function validateUserPassword({email, password}){
     return user;
 }
 
-async function registerUser({email, password}){
-    const newUser = new User({ email });
+async function registerUser({email, password, avatarURL}){
+    console.log({email, password, avatarURL});
+    const newUser = new User({ email, avatarURL });
     newUser.setPassword(password);
     newUser.save();
     return newUser;
@@ -66,6 +67,10 @@ async function updateUserSubscription(userId, subscription){
     return User.findByIdAndUpdate({ _id: userId }, {subscription}, { new: true });
 }
 
+async function updateUserAvatar(userId, avatarURL){
+    return User.findByIdAndUpdate({ _id: userId }, {avatarURL}, { new: true });
+}
+
 module.exports = {
     listContacts,
     getContactById,
@@ -77,5 +82,6 @@ module.exports = {
     registerUser,
     loginUser,
     updateUserToken,
-    updateUserSubscription
+    updateUserSubscription,
+    updateUserAvatar
 }
