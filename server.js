@@ -1,6 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
+const { queryParser } = require('express-query-parser')
 
 require('dotenv').config()
 
@@ -8,6 +9,16 @@ const app = express()
 
 app.use(express.json())
 app.use(cors())
+app.use(
+  queryParser({
+    parseNull: true,
+    parseUndefined: true,
+    parseBoolean: true,
+    parseNumber: true
+  })
+)
+
+require('./config/config-passport')
 
 const routerApi = require('./api')
 app.use('/api', routerApi)
