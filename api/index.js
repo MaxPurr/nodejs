@@ -16,6 +16,8 @@ const {
   getUser,
   updateUserSubscription,
   updateUserAvatar,
+  verifyToken,
+  sendEmailValidation,
   auth
 } = require("../controller");
 
@@ -42,6 +44,10 @@ router.get("/users/current",auth, getUser)
 router.patch("/users",auth, updateUserSubscription)
 
 router.patch("/users/avatars",auth, upload.single("avatar"), updateUserAvatar)
+
+router.get("/users/verify/:verificationToken", verifyToken)
+
+router.post("/users/verify", sendEmailValidation)
 
 
 module.exports = router;

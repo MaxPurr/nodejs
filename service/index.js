@@ -41,9 +41,8 @@ async function validateUserPassword({email, password}){
     return user;
 }
 
-async function registerUser({email, password, avatarURL}){
-    console.log({email, password, avatarURL});
-    const newUser = new User({ email, avatarURL });
+async function registerUser({email, password, avatarURL,verificationToken}){
+    const newUser = new User({ email, avatarURL, verificationToken});
     newUser.setPassword(password);
     newUser.save();
     return newUser;
@@ -71,6 +70,18 @@ async function updateUserAvatar(userId, avatarURL){
     return User.findByIdAndUpdate({ _id: userId }, {avatarURL}, { new: true });
 }
 
+async function getUserByVerificationToken(verificationToken){
+    return User.findOne({ verificationToken });
+}
+
+async function updateUserVerificationToken(userId, verificationToken){
+    return User.findByIdAndUpdate({ _id: userId }, {verificationToken}, { new: true });
+}
+
+async function updateUserVerify(userId, verify){
+    return User.findByIdAndUpdate({ _id: userId }, {verify}, { new: true });
+}
+
 module.exports = {
     listContacts,
     getContactById,
@@ -83,5 +94,8 @@ module.exports = {
     loginUser,
     updateUserToken,
     updateUserSubscription,
-    updateUserAvatar
+    updateUserAvatar,
+    getUserByVerificationToken,
+    updateUserVerificationToken,
+    updateUserVerify
 }
