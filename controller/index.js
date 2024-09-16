@@ -1,9 +1,10 @@
 const service = require("../service");
-const { HttpError } = require("../helpers");
+const { HttpError, sendVerificationEmail } = require("../helpers");
 const gravatar = require("gravatar");
 const path = require('path');
 const fs = require('fs').promises;
 const jimp = require("jimp");
+const {nanoid} = require("nanoid");
 
 const passport = require('passport')
 const Joi = require("joi");
@@ -17,7 +18,11 @@ const userSchema = Joi.object({
 
 const subscriptionSchema = Joi.object({
   subscription: Joi.string().required().valid('starter', 'pro', 'business'),
-})
+});
+
+const userEmailSchema = Joi.object({
+  email: Joi.string().required(),
+});
 
 const auth = async (req, res, next) => {
   passport.authenticate('jwt', { session: false }, (err, user) => {
@@ -121,7 +126,11 @@ const registerUser = async(req, res, next) => {
     if (user)
       throw HttpError(409, `Email is already in use.`); 
     const avatarURL = gravatar.url(email);
-    const newUser = await service.registerUser({...body, avatarURL});
+    const verificationToken = nanoid();
+    const newUser = await service.registerUser({...body, avatarURL, verificationToken});
+
+    sendVerificationEmail(email,verificationToken);
+
     res.status(201).json({user:{
       email:newUser.email,
       subscription:newUser.subscription,
@@ -142,6 +151,8 @@ const loginUser = async(req, res, next) => {
     const user = await service.validateUserPassword(body);
     if (!user)
       throw HttpError(401, `Email or password is wrong.`); 
+    if(!user.verify)
+      throw HttpError(500, `The user's account has not been verified.`); 
     const token = await service.loginUser(user);
     res.status(200).json({token,
       user:{
@@ -211,6 +222,47 @@ const updateUserAvatar = async(req, res, next) =>{
   }
 }
 
+const verifyToken = async(req, res, next) =>{
+  const { verificationToken } = req.params;
+  try{
+    const user = await service.getUserByVerificationToken(verificationToken);
+    if(!user){
+      throw HttpError(404, 'User not found');
+    }
+    const {_id} = user;
+    await service.updateUserVerificationToken(_id,null);
+    await service.updateUserVerify(_id,true);
+    res.status(200).json({
+      message: 'Verification successful',
+    });
+  }
+  catch(error){
+    next(error);
+  }
+}
+
+const sendEmailValidation = async(req, res, next) =>{
+  const body = req.body;
+  try{
+    const {error} = userEmailSchema.validate(body);
+    if(error)
+      throw HttpError(400,"Missing required field email");
+    const {email} = body;
+    const user = await service.getUserByEmail(email);
+    if(!user)
+      throw HttpError(404, 'User not found');
+    if(user.verify)
+      throw HttpError(404, 'Verification has already been passed');
+    sendVerificationEmail(email, user.verificationToken);
+    res.status(200).json({
+      message: "Verification email sent",
+    });
+  }
+  catch(error){
+    next(error);
+  }
+}
+
 module.exports = {
   getListContacts,
   getContactById,
@@ -224,5 +276,7 @@ module.exports = {
   getUser,
   updateUserSubscription,
   updateUserAvatar,
+  verifyToken,
+  sendEmailValidation,
   auth
 };
